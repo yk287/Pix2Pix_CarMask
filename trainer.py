@@ -1,12 +1,9 @@
 
 import util
 import os
-import numpy as np
 from image_to_gif import image_to_gif
 
 import torch
-import torch.nn as nn
-
 from torchvision.utils import save_image
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -48,8 +45,8 @@ class trainer():
 
                 image_pred = self.model[0](input_image)
 
-                fake_logits = self.model[1](image_pred.detach())
-                real_logits = self.model[1](target_image)
+                fake_logits = self.model[1](torch.cat((input_image, image_pred.detach()), 1))
+                real_logits = self.model[1](torch.cat((input_image, target_image), 1))
 
                 discrim_loss = util.discriminator_loss(real_logits, fake_logits) * 0.5
                 discrim_loss.backward()
@@ -59,7 +56,7 @@ class trainer():
                 '''--------Reconstruction Phase--------'''
                 self.optimizer[0].zero_grad()
 
-                gen_logits = self.model[1](image_pred)
+                gen_logits = self.model[1](torch.cat((input_image, image_pred), 1))
                 gen_loss = util.generator_loss(gen_logits)
 
                 if self.lambd > 0:

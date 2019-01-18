@@ -34,7 +34,7 @@ class conv_down(nn.Module):
 
 class conv_up(nn.Module):
 
-    def __init__(self, channel_input, channel_output, kernel=3, stride=1, padding=0, Norm=True, Dropout=0):
+    def __init__(self, channel_input, channel_output, kernel=3, stride=1, padding=0, Norm=True, Dropout=0.1):
         super(conv_up, self).__init__()
 
         steps = [nn.ConvTranspose2d(channel_input, channel_output, kernel_size=kernel, stride=stride, padding=padding, bias=False)]
@@ -78,7 +78,7 @@ class AutoEncoder_Unet(nn.Module):
         self.U_up6 = conv_up(channel_input=256, channel_output=64, kernel=2, stride=2)
         self.U_up7 = conv_up(channel_input=128, channel_output=32, kernel=2, stride=2)
         self.U_up8 = conv_up(channel_input=64, channel_output=16, kernel=2, stride=2)
-        self.U_up9 = conv_up(channel_input=32, channel_output=out_channel, kernel=2, stride=2)
+        self.U_up9 = conv_up(channel_input=32, channel_output=out_channel, kernel=2, stride=2, Norm=False)
 
         self.tan_output = nn.Sequential(
             nn.Tanh()
@@ -107,46 +107,26 @@ class AutoEncoder_Unet(nn.Module):
 
         return self.tan_output(x)
 
+
 class discriminator(nn.Module):
 
     def __init__(self, in_channel, out_channel):
         super(discriminator, self).__init__()
 
-        self.U_down1 = conv_down(channel_input=in_channel, channel_output=16, kernel=2, stride=2, Norm=False)
-        self.U_down2 = conv_down(channel_input=16, channel_output=32, kernel=2, stride=2)
-        self.U_down3 = conv_down(channel_input=32, channel_output=32, kernel=2, stride=2)
-        self.U_down4 = conv_down(channel_input=32, channel_output=64, kernel=2, stride=2)
-        self.U_down5 = conv_down(channel_input=64, channel_output=128, kernel=2, stride=2, padding=1)
-        self.U_down6 = conv_down(channel_input=128, channel_output=256, kernel=2, stride=2)
-        self.U_down7 = conv_down(channel_input=256, channel_output=256, kernel=2, stride=2, Norm=False)
-
-        self.linear = nn.Sequential(
-            nn.Linear(256 * 2 * 2, 256 * 2 * 2),
-            #nn.BatchNorm1d(256 * 2 * 2),
-            nn.LeakyReLU(0.2),
-            nn.Linear(256 * 2 * 2, 128 * 2 * 2),
-            #nn.BatchNorm1d(128 * 2 * 2),
-            nn.LeakyReLU(0.2),
-            nn.Linear(128 * 2 * 2, 64 * 2 * 2),
-            #nn.BatchNorm1d(64 * 2 * 2),
-            nn.LeakyReLU(0.2),
-            nn.Linear(64 * 2 * 2, 32 * 2 * 2),
-            nn.LeakyReLU(0.2),
-            nn.Linear(32 * 2 * 2, 16 * 2 * 2),
-            nn.LeakyReLU(0.2),
-            nn.Linear(16 * 2 * 2, out_channel)
+        self.patch_discrim = nn.Sequential(
+            nn.Conv2d(in_channel, 32, 4, 2, 1),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(32, 64, 4, 2, 1),
+            nn.InstanceNorm2d(64),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(64, 128, 4, 2, 1),
+            nn.InstanceNorm2d(128),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(128, out_channel, 4, 1, 1)
         )
     def forward(self, x):
 
-        x = self.U_down1(x)
-        x = self.U_down2(x)
-        x = self.U_down3(x)
-        x = self.U_down4(x)
-        x = self.U_down5(x)
-        x = self.U_down6(x)
-        x = self.U_down7(x)
-
-        x = self.linear(x.view(x.shape[0], -1))
+        x = self.patch_discrim(x)
 
         return x
 
