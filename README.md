@@ -13,7 +13,29 @@ The dataset contains 5088 photos of cars and a 5088 paired masked image of the p
 
 ## Test result
 
+Predicted masks given a photo of a car
+
 ![](/images/Input_Image.gif) 
 
 ![](/images/Gen_Image.gif)
+
+
+## Masked Images
+
+After masking was applied using the input images and the predicted masks using Pix2Pix
+
+![](Masked_87.png)
+
+
+![](Masked_88.png)
+
+
+![](Masked_89.png)
+
+
+![](Masked_90.png)
+
+
+![](Masked_91.png)
+
 
